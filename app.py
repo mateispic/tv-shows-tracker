@@ -18,7 +18,7 @@ def fetch_shows():
     return [dict(show) for show in shows]
 
 # ---------------- GET: All shows ----------------
-@app.route('/shows', methods=['GET'])
+@app.route('/api/shows', methods=['GET'])
 def get_shows():
     shows = fetch_shows()
     for show in shows:
@@ -269,7 +269,7 @@ def delete_show(show_id):
 
     return jsonify({"message": "Show deleted successfully"}), 200
 
-@app.route('/shows_view')
+@app.route('/shows')
 def shows_view():
     shows = fetch_shows()
     return render_template('shows.html', shows=shows)
