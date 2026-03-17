@@ -15,9 +15,23 @@ def get_db_connection():
 @app.route('/shows', methods=['GET'])
 def get_shows():
     conn = get_db_connection()
+    
     shows = conn.execute("SELECT * FROM shows").fetchall()
+    
     conn.close()
-    return jsonify([dict(show) for show in shows]), 200
+    
+    result = []
+
+    for show in shows:
+        show_dict = dict(show)
+        show_dict["_links"] = {
+            "self": f"/shows/{show['id']}",
+            "seasons": f"/shows/{show['id']}/seasons",
+            "episodes": f"/shows/{show['id']}/episodes"
+        }
+        result.append(show_dict)
+
+    return jsonify(result), 200
 
 # ---------------- GET: A show by id ----------------
 @app.route('/shows/<int:show_id>', methods=['GET'])
@@ -29,7 +43,17 @@ def get_show(show_id):
     if show is None:
         return jsonify({"error": "Show not found"}), 404
     
-    return jsonify(dict(show)), 200
+    show_dict = dict(show)
+    
+    show_dict["_links"] = {
+        "self": f"/shows/{show_id}",
+        "seasons": f"/shows/{show_id}/seasons",
+        "episodes": f"/shows/{show_id}/episodes",
+        "update": f"/shows/{show_id}",
+        "delete": f"/shows/{show_id}"
+    }
+
+    return jsonify(show_dict), 200
 
 # ---------------- GET: All seasons for show by id ----------------
 @app.route('/shows/<int:show_id>/seasons', methods=['GET'])
@@ -198,9 +222,12 @@ def update_show(show_id):
 @app.route('/shows/<int:show_id>', methods=['PATCH'])
 def patch_show(show_id):
     data = request.json
+    
+    if not data:
+        return jsonify({"error": "No fields provided"}), 400
 
     conn = get_db_connection()
-
+    
     show = conn.execute("SELECT * FROM shows WHERE id = ?", (show_id,)).fetchone()
     if show is None:
         conn.close()
@@ -220,7 +247,7 @@ def patch_show(show_id):
     conn.execute(query, values)
     conn.commit()
     conn.close()
-
+    
     return jsonify({"message": "Show partially updated"}), 200
 
 # ---------------- DELETE: Remove a show by id ----------------
