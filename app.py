@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import sqlite3
 
 app = Flask(__name__)
@@ -11,27 +11,23 @@ def get_db_connection():
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
+def fetch_shows():
+    conn = get_db_connection()
+    shows = conn.execute("SELECT * FROM shows").fetchall()
+    conn.close()
+    return [dict(show) for show in shows]
+
 # ---------------- GET: All shows ----------------
 @app.route('/shows', methods=['GET'])
 def get_shows():
-    conn = get_db_connection()
-    
-    shows = conn.execute("SELECT * FROM shows").fetchall()
-    
-    conn.close()
-    
-    result = []
-
+    shows = fetch_shows()
     for show in shows:
-        show_dict = dict(show)
-        show_dict["_links"] = {
+        show["_links"] = {
             "self": f"/shows/{show['id']}",
             "seasons": f"/shows/{show['id']}/seasons",
             "episodes": f"/shows/{show['id']}/episodes"
         }
-        result.append(show_dict)
-
-    return jsonify(result), 200
+    return jsonify(shows), 200
 
 # ---------------- GET: A show by id ----------------
 @app.route('/shows/<int:show_id>', methods=['GET'])
@@ -272,6 +268,11 @@ def delete_show(show_id):
     conn.close()
 
     return jsonify({"message": "Show deleted successfully"}), 200
+
+@app.route('/shows_view')
+def shows_view():
+    shows = fetch_shows()
+    return render_template('shows.html', shows=shows)
 
 if __name__ == '__main__':
     app.run(debug=True)
