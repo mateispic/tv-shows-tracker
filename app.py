@@ -223,5 +223,28 @@ def patch_show(show_id):
 
     return jsonify({"message": "Show partially updated"}), 200
 
+# ---------------- DELETE: Remove a show by id ----------------
+@app.route('/shows/<int:show_id>', methods=['DELETE'])
+def delete_show(show_id):
+    conn = get_db_connection()
+
+    show = conn.execute(
+        "SELECT * FROM shows WHERE id = ?",
+        (show_id,)
+    ).fetchone()
+
+    if show is None:
+        conn.close()
+        return jsonify({"error": "Show not found"}), 404
+
+    conn.execute(
+        "DELETE FROM shows WHERE id = ?",
+        (show_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Show deleted successfully"}), 200
+
 if __name__ == '__main__':
     app.run(debug=True)
