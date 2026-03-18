@@ -247,7 +247,7 @@ def patch_show(show_id):
     return jsonify({"message": "Show partially updated"}), 200
 
 # ---------------- DELETE: Remove a show by id ----------------
-@app.route('/shows/<int:show_id>', methods=['DELETE'])
+@app.route('/api/shows/<int:show_id>', methods=['DELETE'])
 def delete_show(show_id):
     conn = get_db_connection()
 
@@ -337,6 +337,16 @@ def edit_show(show_id):
         return "Show not found", 404
 
     return render_template('edit_show.html', show=show)
+
+@app.route("/shows/<int:show_id>/delete", methods=["POST"])
+def delete_show_web(show_id):
+    conn = get_db_connection()
+    show = conn.execute("SELECT * FROM shows WHERE id = ?", (show_id,)).fetchone()
+    if show:
+        conn.execute("DELETE FROM shows WHERE id = ?", (show_id,))
+        conn.commit()
+    conn.close()
+    return redirect('/shows')
 
 if __name__ == '__main__':
     app.run(debug=True)
