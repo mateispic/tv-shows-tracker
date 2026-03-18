@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, redirect
+import requests
 import sqlite3
 
 app = Flask(__name__)
@@ -284,17 +285,15 @@ def delete_show(show_id):
 @app.route('/shows')
 def shows_view():
     search_query = request.args.get('q', '').strip()
-    conn = get_db_connection()
 
-    if search_query:
-        shows = conn.execute(
-            "SELECT * FROM shows WHERE title LIKE ?",
-            ('%' + search_query + '%',)
-        ).fetchall()
+    resp = requests.get('http://localhost:5000/api/shows')
+    if resp.status_code == 200:
+        shows = resp.json()
+        if search_query:
+            shows = [show for show in shows if search_query.lower() in show['title'].lower()]
     else:
-        shows = conn.execute("SELECT * FROM shows").fetchall()
+        shows = []
 
-    conn.close()
     no_results = len(shows) == 0
     return render_template('shows.html', shows=shows, search_query=search_query, no_results=no_results)
 
