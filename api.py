@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, url_for
 import sqlite3
 
 api_bp = Blueprint('api', __name__)
@@ -68,6 +68,12 @@ def set_show_genres(conn, show_id, genre_ids):
         [(show_id, genre_id) for genre_id in genre_ids]
     )
 
+
+def with_self_link(response, endpoint, **values):
+    self_url = url_for(endpoint, _external=False, **values)
+    response.headers["Link"] = f'<{self_url}>; rel="self"'
+    return response
+
 # ---------------- GET: All shows ----------------
 @api_bp.route('/api/shows', methods=['GET'])
 def get_shows():
@@ -79,8 +85,10 @@ def get_shows():
     for show in shows:
         show_dict = dict(show)
         show_dict["_links"] = {
-            "self": f"/shows/{show_dict['id']}",
-            "episodes": f"/shows/{show_dict['id']}/episodes",
+            "self": f"/api/shows/{show_dict['id']}",
+            "collection": "/api/shows",
+            "seasons": f"/api/shows/{show_dict['id']}/seasons",
+            "episodes": f"/api/shows/{show_dict['id']}/episodes",
             "imdb": show_dict['imdb_link']
         }
 
@@ -121,7 +129,9 @@ def get_shows():
         shows_list.append(show_dict)
 
     conn.close()
-    return jsonify(shows_list), 200
+    response = jsonify(shows_list)
+    response.status_code = 200
+    return with_self_link(response, 'api.get_shows')
 
 # ---------------- GET: A show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>', methods=['GET'])
@@ -166,14 +176,17 @@ def get_show(show_id):
     show_dict["genres"] = [genre["name"] for genre in genres]
 
     show_dict["_links"] = {
-        "self": f"/shows/{show_id}",
-        "seasons": f"/shows/{show_id}/seasons",
-        "episodes": f"/shows/{show_id}/episodes",
-        "update": f"/shows/{show_id}",
-        "delete": f"/shows/{show_id}"
+        "self": f"/api/shows/{show_id}",
+        "collection": "/api/shows",
+        "seasons": f"/api/shows/{show_id}/seasons",
+        "episodes": f"/api/shows/{show_id}/episodes",
+        "update": f"/api/shows/{show_id}",
+        "delete": f"/api/shows/{show_id}"
     }
 
-    return jsonify(show_dict), 200
+    response = jsonify(show_dict)
+    response.status_code = 200
+    return with_self_link(response, 'api.get_show', show_id=show_id)
 
 
 # ---------------- GET: All genres ----------------
@@ -182,7 +195,20 @@ def get_genres():
     conn = get_db_connection()
     genres = conn.execute("SELECT id, name FROM genres ORDER BY name").fetchall()
     conn.close()
-    return jsonify([dict(genre) for genre in genres]), 200
+
+    genres_list = []
+    for genre in genres:
+        genre_dict = dict(genre)
+        genre_dict["_links"] = {
+            "self": f"/api/genres/{genre_dict['id']}",
+            "collection": "/api/genres",
+            "shows": f"/api/shows?genre_id={genre_dict['id']}"
+        }
+        genres_list.append(genre_dict)
+
+    response = jsonify(genres_list)
+    response.status_code = 200
+    return with_self_link(response, 'api.get_genres')
 
 # ---------------- GET: All seasons for show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>/seasons', methods=['GET'])
@@ -204,7 +230,19 @@ def get_seasons_for_show(show_id):
     if not seasons:
         return jsonify({"error": "Seasons not found"}), 404
 
-    return jsonify([dict(season) for season in seasons]), 200
+    seasons_list = []
+    for season in seasons:
+        season_dict = dict(season)
+        season_dict["_links"] = {
+            "self": f"/api/shows/{show_id}/seasons",
+            "show": f"/api/shows/{show_id}",
+            "episodes": f"/api/shows/{show_id}/episodes"
+        }
+        seasons_list.append(season_dict)
+
+    response = jsonify(seasons_list)
+    response.status_code = 200
+    return with_self_link(response, 'api.get_seasons_for_show', show_id=show_id)
 
 # ---------------- GET: All episodes for show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>/episodes', methods=['GET'])
@@ -235,7 +273,18 @@ def get_episodes_for_show(show_id):
     if not episodes:
         return jsonify({"error": "Episodes not found"}), 404
 
-    return jsonify([dict(ep) for ep in episodes]), 200
+    episodes_list = []
+    for episode in episodes:
+        episode_dict = dict(episode)
+        episode_dict["_links"] = {
+            "self": f"/api/shows/{show_id}/episodes",
+            "show": f"/api/shows/{show_id}"
+        }
+        episodes_list.append(episode_dict)
+
+    response = jsonify(episodes_list)
+    response.status_code = 200
+    return with_self_link(response, 'api.get_episodes_for_show', show_id=show_id)
 
 # ---------------- POST: Add a show ----------------
 @api_bp.route('/api/shows', methods=['POST'])
@@ -278,7 +327,19 @@ def create_show():
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Show created", "id": show_id}), 201
+    response = jsonify({
+        "message": "Show created",
+        "id": show_id,
+        "_links": {
+            "self": f"/api/shows/{show_id}",
+            "collection": "/api/shows",
+            "seasons": f"/api/shows/{show_id}/seasons",
+            "episodes": f"/api/shows/{show_id}/episodes"
+        }
+    })
+    response.status_code = 201
+    response.headers["Location"] = f"/api/shows/{show_id}"
+    return with_self_link(response, 'api.create_show')
 
 # ---------------- POST: Add season for a show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>/seasons', methods=['POST'])
@@ -308,7 +369,17 @@ def create_season(show_id):
         return jsonify({"error": "Season already exists for this show"}), 400
 
     conn.close()
-    return jsonify({"message": "Season created", "id": season_id}), 201
+    response = jsonify({
+        "message": "Season created",
+        "id": season_id,
+        "_links": {
+            "self": f"/api/shows/{show_id}/seasons",
+            "show": f"/api/shows/{show_id}",
+            "episodes": f"/api/shows/{show_id}/episodes"
+        }
+    })
+    response.status_code = 201
+    return with_self_link(response, 'api.create_season', show_id=show_id)
 
 # ---------------- POST: Add an episode to a season of a show by id ----------------
 @api_bp.route('/api/seasons/<int:season_id>/episodes', methods=['POST'])
@@ -337,8 +408,26 @@ def create_episode(season_id):
         conn.close()
         return jsonify({"error": "Episode already exists for this season"}), 400
 
+    show_row = conn.execute(
+        "SELECT show_id FROM seasons WHERE id = ?",
+        (season_id,)
+    ).fetchone()
+
     conn.close()
-    return jsonify({"message": "Episode created", "id": episode_id}), 201
+    show_id = show_row["show_id"] if show_row else None
+
+    response = jsonify({
+        "message": "Episode created",
+        "id": episode_id,
+        "_links": {
+            "self": f"/api/seasons/{season_id}/episodes",
+            "season": f"/api/shows/{show_id}/seasons" if show_id else None,
+            "show": f"/api/shows/{show_id}" if show_id else None,
+            "episodes": f"/api/shows/{show_id}/episodes" if show_id else None
+        }
+    })
+    response.status_code = 201
+    return with_self_link(response, 'api.create_episode', season_id=season_id)
 
 # ---------------- PUT: Update a show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>', methods=['PUT'])
@@ -385,7 +474,17 @@ def update_show(show_id):
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Show fully updated"}), 200
+    response = jsonify({
+        "message": "Show fully updated",
+        "_links": {
+            "self": f"/api/shows/{show_id}",
+            "collection": "/api/shows",
+            "seasons": f"/api/shows/{show_id}/seasons",
+            "episodes": f"/api/shows/{show_id}/episodes"
+        }
+    })
+    response.status_code = 200
+    return with_self_link(response, 'api.update_show', show_id=show_id)
 
 # ---------------- PATCH: Partially update a show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>', methods=['PATCH'])
@@ -461,8 +560,18 @@ def patch_show(show_id):
 
     conn.commit()
     conn.close()
-    
-    return jsonify({"message": "Show partially updated"}), 200
+
+    response = jsonify({
+        "message": "Show partially updated",
+        "_links": {
+            "self": f"/api/shows/{show_id}",
+            "collection": "/api/shows",
+            "seasons": f"/api/shows/{show_id}/seasons",
+            "episodes": f"/api/shows/{show_id}/episodes"
+        }
+    })
+    response.status_code = 200
+    return with_self_link(response, 'api.patch_show', show_id=show_id)
 
 # ---------------- DELETE: Remove a show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>', methods=['DELETE'])
@@ -485,4 +594,13 @@ def delete_show(show_id):
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Show deleted successfully"}), 200
+    response = jsonify({
+        "message": "Show deleted successfully",
+        "_links": {
+            "self": f"/api/shows/{show_id}",
+            "collection": "/api/shows",
+            "create": "/api/shows"
+        }
+    })
+    response.status_code = 200
+    return with_self_link(response, 'api.delete_show', show_id=show_id)
