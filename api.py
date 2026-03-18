@@ -30,7 +30,6 @@ def upsert_progress(conn, show_id, seasons_watched, finished, personal_rating):
         (show_id, seasons_watched, int(bool(finished)), personal_rating)
     )
 
-
 def parse_genre_ids(raw_genre_ids):
     if raw_genre_ids is None:
         return None
@@ -41,9 +40,7 @@ def parse_genre_ids(raw_genre_ids):
     for genre_id in raw_genre_ids:
         parsed.append(int(genre_id))
 
-    # Remove duplicates while keeping order.
     return list(dict.fromkeys(parsed))
-
 
 def validate_genre_ids(conn, genre_ids):
     if not genre_ids:
@@ -56,7 +53,6 @@ def validate_genre_ids(conn, genre_ids):
     ).fetchall()
     return len(rows) == len(genre_ids)
 
-
 def set_show_genres(conn, show_id, genre_ids):
     conn.execute("DELETE FROM show_genres WHERE show_id = ?", (show_id,))
 
@@ -67,7 +63,6 @@ def set_show_genres(conn, show_id, genre_ids):
         "INSERT INTO show_genres (show_id, genre_id) VALUES (?, ?)",
         [(show_id, genre_id) for genre_id in genre_ids]
     )
-
 
 def with_self_link(response, endpoint, **values):
     self_url = url_for(endpoint, _external=False, **values)
