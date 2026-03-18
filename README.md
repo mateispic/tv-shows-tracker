@@ -172,9 +172,10 @@ Common status codes used:
 
 Extra API behavior:
 
-- `GET /api/shows` also returns progress text for each show.
+- `GET /api/shows` also returns progress text for each show (and includes personal rating in that text when available).
 - `GET /api/shows/<id>` also includes progress fields (`seasons_watched`, `finished`, `personal_rating`).
 - `POST /api/shows` can also receive progress fields when creating a show.
+- `PUT /api/shows/<id>` and `PATCH /api/shows/<id>` update show data and progress data; progress is saved in the `progress` table using upsert logic.
 
 ## Postman testing
 
