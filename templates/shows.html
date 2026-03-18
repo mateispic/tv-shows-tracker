@@ -3,7 +3,7 @@
 
 <head>
     <title>TV Shows</title>
-    
+
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 
     <!-- Google Font -->
@@ -48,7 +48,9 @@
                 <div class="meta">
                     <span>{{ show.release_year }}</span>
                     <span>⭐ {{ show.imdb_rating }}</span>
-                    <span>{{ show.total_seasons }} seasons</span>
+                    <a href="/shows/{{ show.id }}/episodes" class="imdb-link">
+                        Episodes
+                    </a>
                     <a href="{{ show.imdb_link }}" target="_blank" class="imdb-link">IMDb</a>
                 </div>
             </div>

@@ -86,8 +86,7 @@ def get_episodes_for_show(show_id):
     conn = get_db_connection()
 
     show = conn.execute(
-        "SELECT * FROM shows WHERE id = ?",
-        (show_id,)
+        "SELECT * FROM shows WHERE id = ?", (show_id,)
     ).fetchone()
 
     if show is None:
@@ -96,7 +95,7 @@ def get_episodes_for_show(show_id):
 
     episodes = conn.execute(
         """
-        SELECT e.*
+        SELECT e.id, e.title, e.episode_number, e.air_date, e.imdb_rating, s.season_number
         FROM episodes e
         JOIN seasons s ON e.season_id = s.id
         WHERE s.show_id = ?
@@ -357,6 +356,23 @@ def delete_show_web(show_id):
         return redirect('/shows')
     else:
         return f"Error deleting show: {response.json().get('error', 'Unknown error')}", response.status_code
+
+@app.route('/shows/<int:show_id>/episodes')
+def episodes_view(show_id):
+    response = requests.get(f'http://127.0.0.1:5000/api/shows/{show_id}')
+    if response.status_code != 200:
+        return "Show not found", 404
+
+    show = response.json()
+    show_title = show['title']
+
+    response_episodes = requests.get(f'http://127.0.0.1:5000/api/shows/{show_id}/episodes')
+    if response_episodes.status_code == 200:
+        episodes = response_episodes.json()
+    else:
+        episodes = []
+
+    return render_template('episodes.html', episodes=episodes, show_title=show_title)
 
 if __name__ == '__main__':
     app.run(debug=True)
