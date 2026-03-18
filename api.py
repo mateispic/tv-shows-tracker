@@ -17,7 +17,6 @@ def fetch_shows():
     conn.close()
     return [dict(show) for show in shows]
 
-
 def upsert_progress(conn, show_id, seasons_watched, finished, personal_rating):
     conn.execute(
         """
@@ -31,34 +30,46 @@ def upsert_progress(conn, show_id, seasons_watched, finished, personal_rating):
         (show_id, seasons_watched, int(bool(finished)), personal_rating)
     )
 
-
 # ---------------- GET: All shows ----------------
 @api_bp.route('/api/shows', methods=['GET'])
 def get_shows():
-    shows = fetch_shows()
     conn = get_db_connection()
+    
+    shows = conn.execute("SELECT * FROM shows").fetchall()
+    shows_list = []
 
     for show in shows:
-        show["_links"] = {
-            "self": f"/shows/{show['id']}",
-            "episodes": f"/shows/{show['id']}/episodes",
-            "imdb": show['imdb_link']
+        show_dict = dict(show)
+        show_dict["_links"] = {
+            "self": f"/shows/{show_dict['id']}",
+            "episodes": f"/shows/{show_dict['id']}/episodes",
+            "imdb": show_dict['imdb_link']
         }
 
         progress = conn.execute(
-            "SELECT seasons_watched, finished FROM progress WHERE show_id = ?",
-            (show['id'],)
+            "SELECT seasons_watched, finished, personal_rating FROM progress WHERE show_id = ?",
+            (show_dict['id'],)
         ).fetchone()
 
         if progress:
-            show['progress_text'] = f"{progress['seasons_watched']}/{show['total_seasons']} seasons watched"
-            if progress['finished']:
-                show['progress_text'] += " (finished)"
+            progress_dict = dict(progress)
+            seasons_watched = progress_dict['seasons_watched']
+            finished = bool(progress_dict['finished'])
+            rating = progress_dict.get('personal_rating')
+
+            progress_text = f"{seasons_watched}/{show_dict['total_seasons']} seasons watched"
+            if finished:
+                progress_text += " (finished)"
+            if rating is not None:
+                progress_text += f" | Rating: {rating}/10"
+            show_dict['progress_text'] = progress_text
         else:
-            show['progress_text'] = f"0/{show['total_seasons']} seasons watched"
+            show_dict['progress_text'] = f"0/{show_dict['total_seasons']} seasons watched"
+
+        shows_list.append(show_dict)
 
     conn.close()
-    return jsonify(shows), 200
+    return jsonify(shows_list), 200
 
 # ---------------- GET: A show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>', methods=['GET'])
