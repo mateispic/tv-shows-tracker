@@ -17,6 +17,12 @@ def fetch_shows():
     conn.close()
     return [dict(show) for show in shows]
 
+# ========================================================
+
+# ---------------- API ----------------
+
+# ========================================================
+
 # ---------------- GET: All shows ----------------
 @app.route('/api/shows', methods=['GET'])
 def get_shows():
@@ -30,7 +36,7 @@ def get_shows():
     return jsonify(shows), 200
 
 # ---------------- GET: A show by id ----------------
-@app.route('/shows/<int:show_id>', methods=['GET'])
+@app.route('/api/shows/<int:show_id>', methods=['GET'])
 def get_show(show_id):
     conn = get_db_connection()
     show = conn.execute("SELECT * FROM shows WHERE id = ?", (show_id,)).fetchone()
@@ -52,7 +58,7 @@ def get_show(show_id):
     return jsonify(show_dict), 200
 
 # ---------------- GET: All seasons for show by id ----------------
-@app.route('/shows/<int:show_id>/seasons', methods=['GET'])
+@app.route('/api/shows/<int:show_id>/seasons', methods=['GET'])
 def get_seasons_for_show(show_id):
     conn = get_db_connection()
 
@@ -74,7 +80,7 @@ def get_seasons_for_show(show_id):
     return jsonify([dict(season) for season in seasons]), 200
 
 # ---------------- GET: All episodes for show by id ----------------
-@app.route('/shows/<int:show_id>/episodes', methods=['GET'])
+@app.route('/api/shows/<int:show_id>/episodes', methods=['GET'])
 def get_episodes_for_show(show_id):
     conn = get_db_connection()
 
@@ -106,7 +112,7 @@ def get_episodes_for_show(show_id):
     return jsonify([dict(ep) for ep in episodes]), 200
 
 # ---------------- POST: Add a show ----------------
-@app.route('/shows', methods=['POST'])
+@app.route('/api/shows', methods=['POST'])
 def create_show():
     data = request.json
 
@@ -127,7 +133,7 @@ def create_show():
     return jsonify({"message": "Show created", "id": show_id}), 201
 
 # ---------------- POST: Add season for a show by id ----------------
-@app.route('/shows/<int:show_id>/seasons', methods=['POST'])
+@app.route('/api/shows/<int:show_id>/seasons', methods=['POST'])
 def create_season(show_id):
     data = request.json
     required_fields = ['season_number', 'release_year']
@@ -157,7 +163,7 @@ def create_season(show_id):
     return jsonify({"message": "Season created", "id": season_id}), 201
 
 # ---------------- POST: Add an episode to a season of a show by id ----------------
-@app.route('/seasons/<int:season_id>/episodes', methods=['POST'])
+@app.route('/api/seasons/<int:season_id>/episodes', methods=['POST'])
 def create_episode(season_id):
     data = request.json
     required_fields = ['title', 'episode_number', 'air_date', 'imdb_rating']
@@ -187,7 +193,7 @@ def create_episode(season_id):
     return jsonify({"message": "Episode created", "id": episode_id}), 201
 
 # ---------------- PUT: Update a show by id ----------------
-@app.route('/shows/<int:show_id>', methods=['PUT'])
+@app.route('/api/shows/<int:show_id>', methods=['PUT'])
 def update_show(show_id):
     data = request.json
 
@@ -215,7 +221,7 @@ def update_show(show_id):
     return jsonify({"message": "Show fully updated"}), 200
 
 # ---------------- PATCH: Partially update a show by id ----------------
-@app.route('/shows/<int:show_id>', methods=['PATCH'])
+@app.route('/api/shows/<int:show_id>', methods=['PATCH'])
 def patch_show(show_id):
     data = request.json
     
@@ -269,7 +275,11 @@ def delete_show(show_id):
 
     return jsonify({"message": "Show deleted successfully"}), 200
 
+# ========================================================
+
 # ---------------- Web Client ----------------
+
+# ========================================================
 
 @app.route('/shows')
 def shows_view():
