@@ -51,6 +51,20 @@ def get_shows():
             (show_dict['id'],)
         ).fetchone()
 
+        genres = conn.execute(
+            """
+            SELECT g.name
+            FROM genres g
+            JOIN show_genres sg ON sg.genre_id = g.id
+            WHERE sg.show_id = ?
+            ORDER BY g.name
+            """,
+            (show_dict['id'],)
+        ).fetchall()
+
+        show_dict['genres'] = [row['name'] for row in genres]
+        show_dict['genres_text'] = ", ".join(show_dict['genres']) if show_dict['genres'] else "No genres"
+
         if progress:
             progress_dict = dict(progress)
             seasons_watched = progress_dict['seasons_watched']

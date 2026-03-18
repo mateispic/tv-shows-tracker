@@ -36,7 +36,14 @@
         <div class="row">
 
             <div class="left">
-                <h3>{{ show.title }}</h3>
+                <div class="title-row">
+                    <h3>{{ show.title }}</h3>
+                    <div class="genre-badges">
+                        {% for genre in show.genres %}
+                        <span class="genre-badge">{{ genre }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
 
                 <div class="meta">
                     <span>{{ show.release_year }}</span>
