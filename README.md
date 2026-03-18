@@ -24,22 +24,27 @@ The data is stored in a SQLite database.
 
 The project has a simple 3-layer architecture:
 
-- Presentation layer: HTML pages from templates (shows list, add form, edit form).
-- Application layer: Flask routes from app.py (web routes + REST API routes).
+- Presentation layer: HTML pages from templates (shows list, add form, edit form, episodes page).
+- Application layer: Flask routes split into blueprints:
+    - api.py for REST API routes
+    - web.py for web routes
+    - run.py to create the Flask app and register both blueprints
 - Data layer: SQLite database (tvshows.db) with relational tables.
 
 Request flow:
 
 1. User sends request from browser or Postman.
-2. Flask route handles the request and validates input.
-3. SQL query is executed on SQLite.
+2. If request is from browser, web.py calls API endpoints using requests.
+3. API route from api.py validates input and executes SQL on SQLite.
 4. Response is returned as HTML page (web) or JSON (API).
 
 ## Project structure
 
 ```
 tv-shows-tracker/
-|-- app.py
+|-- run.py
+|-- api.py
+|-- web.py
 |-- database.py
 |-- requirements.txt
 |-- tvshows.db
@@ -48,7 +53,8 @@ tv-shows-tracker/
 `-- templates/
     |-- shows.html
     |-- add_show.html
-    `-- edit_show.html
+    |-- edit_show.html
+    `-- episodes.html
 ```
 
 ## Database structure
@@ -125,7 +131,7 @@ python database.py
 5. Start the Flask app:
 
 ```powershell
-python app.py
+python run.py
 ```
 
 6. Open in browser:
@@ -142,6 +148,7 @@ http://127.0.0.1:5000/shows
 - `GET /shows/<id>/edit` - page to edit a show
 - `POST /shows/<id>/edit` - save edited show
 - `POST /shows/<id>/delete` - delete a show
+- `GET /shows/<id>/episodes` - show all episodes for one show
 
 ## API endpoints
 
@@ -163,6 +170,12 @@ Common status codes used:
 - 400: bad request / missing fields / duplicate data
 - 404: resource not found
 
+Extra API behavior:
+
+- `GET /api/shows` also returns progress text for each show.
+- `GET /api/shows/<id>` also includes progress fields (`seasons_watched`, `finished`, `personal_rating`).
+- `POST /api/shows` can also receive progress fields when creating a show.
+
 ## Postman testing
 
 I tested the API endpoints in Postman using GET, POST, PUT, PATCH, and DELETE requests.
@@ -183,3 +196,4 @@ Tested examples:
 
 - The `database.py` script drops and recreates tables, then inserts sample data.
 - If you run `database.py` again, old data will be replaced.
+- The web interface communicates with the API endpoints from the same Flask app.
