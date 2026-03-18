@@ -104,7 +104,7 @@ def get_shows():
         ).fetchall()
 
         show_dict['genres'] = [row['name'] for row in genres]
-        show_dict['genres_text'] = ", ".join(show_dict['genres']) if show_dict['genres'] else "No genres"
+        # show_dict['genres_text'] = ", ".join(show_dict['genres']) if show_dict['genres'] else "No genres"
 
         if progress:
             progress_dict = dict(progress)
