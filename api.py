@@ -1,9 +1,8 @@
-from flask import Flask, request, jsonify, render_template, redirect
-import requests
+from flask import Blueprint, request, jsonify, Flask, json
 import sqlite3
 
-app = Flask(__name__)
-app.json.sort_keys = False
+api_bp = Blueprint('api', __name__)
+
 DB_PATH = 'tvshows.db'
 
 def get_db_connection():
@@ -18,14 +17,9 @@ def fetch_shows():
     conn.close()
     return [dict(show) for show in shows]
 
-# ========================================================
-
-# ---------------- API ----------------
-
-# ========================================================
 
 # ---------------- GET: All shows ----------------
-@app.route('/api/shows', methods=['GET'])
+@api_bp.route('/api/shows', methods=['GET'])
 def get_shows():
     shows = fetch_shows()
     conn = get_db_connection()
@@ -53,7 +47,7 @@ def get_shows():
     return jsonify(shows), 200
 
 # ---------------- GET: A show by id ----------------
-@app.route('/api/shows/<int:show_id>', methods=['GET'])
+@api_bp.route('/api/shows/<int:show_id>', methods=['GET'])
 def get_show(show_id):
     conn = get_db_connection()
     show = conn.execute("SELECT * FROM shows WHERE id = ?", (show_id,)).fetchone()
@@ -90,7 +84,7 @@ def get_show(show_id):
     return jsonify(show_dict), 200
 
 # ---------------- GET: All seasons for show by id ----------------
-@app.route('/api/shows/<int:show_id>/seasons', methods=['GET'])
+@api_bp.route('/api/shows/<int:show_id>/seasons', methods=['GET'])
 def get_seasons_for_show(show_id):
     conn = get_db_connection()
 
@@ -112,7 +106,7 @@ def get_seasons_for_show(show_id):
     return jsonify([dict(season) for season in seasons]), 200
 
 # ---------------- GET: All episodes for show by id ----------------
-@app.route('/api/shows/<int:show_id>/episodes', methods=['GET'])
+@api_bp.route('/api/shows/<int:show_id>/episodes', methods=['GET'])
 def get_episodes_for_show(show_id):
     conn = get_db_connection()
 
@@ -143,7 +137,7 @@ def get_episodes_for_show(show_id):
     return jsonify([dict(ep) for ep in episodes]), 200
 
 # ---------------- POST: Add a show ----------------
-@app.route('/api/shows', methods=['POST'])
+@api_bp.route('/api/shows', methods=['POST'])
 def create_show():
     data = request.json
 
@@ -175,7 +169,7 @@ def create_show():
     return jsonify({"message": "Show created", "id": show_id}), 201
 
 # ---------------- POST: Add season for a show by id ----------------
-@app.route('/api/shows/<int:show_id>/seasons', methods=['POST'])
+@api_bp.route('/api/shows/<int:show_id>/seasons', methods=['POST'])
 def create_season(show_id):
     data = request.json
     required_fields = ['season_number', 'release_year']
@@ -205,7 +199,7 @@ def create_season(show_id):
     return jsonify({"message": "Season created", "id": season_id}), 201
 
 # ---------------- POST: Add an episode to a season of a show by id ----------------
-@app.route('/api/seasons/<int:season_id>/episodes', methods=['POST'])
+@api_bp.route('/api/seasons/<int:season_id>/episodes', methods=['POST'])
 def create_episode(season_id):
     data = request.json
     required_fields = ['title', 'episode_number', 'air_date', 'imdb_rating']
@@ -235,7 +229,7 @@ def create_episode(season_id):
     return jsonify({"message": "Episode created", "id": episode_id}), 201
 
 # ---------------- PUT: Update a show by id ----------------
-@app.route('/api/shows/<int:show_id>', methods=['PUT'])
+@api_bp.route('/api/shows/<int:show_id>', methods=['PUT'])
 def update_show(show_id):
     data = request.json
 
@@ -263,7 +257,7 @@ def update_show(show_id):
     return jsonify({"message": "Show fully updated"}), 200
 
 # ---------------- PATCH: Partially update a show by id ----------------
-@app.route('/api/shows/<int:show_id>', methods=['PATCH'])
+@api_bp.route('/api/shows/<int:show_id>', methods=['PATCH'])
 def patch_show(show_id):
     data = request.json
     
@@ -281,10 +275,10 @@ def patch_show(show_id):
     values = []
 
     for key in data:
-        fields.append(f"{key} = ?")
-        values.append(data[key])
+        fields.api_bpend(f"{key} = ?")
+        values.api_bpend(data[key])
 
-    values.append(show_id)
+    values.api_bpend(show_id)
 
     query = f"UPDATE shows SET {', '.join(fields)} WHERE id = ?"
 
@@ -295,7 +289,7 @@ def patch_show(show_id):
     return jsonify({"message": "Show partially updated"}), 200
 
 # ---------------- DELETE: Remove a show by id ----------------
-@app.route('/api/shows/<int:show_id>', methods=['DELETE'])
+@api_bp.route('/api/shows/<int:show_id>', methods=['DELETE'])
 def delete_show(show_id):
     conn = get_db_connection()
 
@@ -316,124 +310,3 @@ def delete_show(show_id):
     conn.close()
 
     return jsonify({"message": "Show deleted successfully"}), 200
-
-# ========================================================
-
-# ---------------- Web Client ----------------
-
-# ========================================================
-
-@app.route('/shows')
-def shows_view():
-    search_query = request.args.get('q', '').strip()
-
-    resp = requests.get('http://localhost:5000/api/shows')
-    if resp.status_code == 200:
-        shows = resp.json()
-        if search_query:
-            shows = [show for show in shows if search_query.lower() in show['title'].lower()]
-    else:
-        shows = []
-
-    no_results = len(shows) == 0
-    return render_template('shows.html', shows=shows, search_query=search_query, no_results=no_results)
-
-@app.route('/shows/add', methods=['GET', 'POST'])
-def add_show():
-    if request.method == 'POST':
-        data = request.form
-
-        required_fields = ['title', 'release_year', 'total_seasons', 'imdb_rating', 'imdb_link']
-        if not all(field in data and data[field].strip() for field in required_fields):
-            return "Missing required fields", 400
-
-        seasons_watched = int(data.get('seasons_watched', 0))
-        personal_rating = float(data['personal_rating']) if data.get('personal_rating') else None
-        total_seasons = int(data['total_seasons'])
-
-        finished = seasons_watched >= total_seasons
-
-        payload = {
-            "title": data['title'],
-            "release_year": int(data['release_year']),
-            "total_seasons": total_seasons,
-            "imdb_rating": float(data['imdb_rating']),
-            "imdb_link": data['imdb_link'],
-            "seasons_watched": seasons_watched,
-            "finished": finished,
-            "personal_rating": personal_rating
-        }
-
-        response = requests.post('http://127.0.0.1:5000/api/shows', json=payload)
-
-        if response.status_code == 201:
-            return redirect('/shows')
-        else:
-            return f"Error creating show: {response.json().get('error', 'Unknown error')}", 400
-
-    return render_template('add_show.html')
-
-@app.route('/shows/<int:show_id>/edit', methods=['GET', 'POST'])
-def edit_show(show_id):
-    api_url = f'http://127.0.0.1:5000/api/shows/{show_id}'
-
-    if request.method == 'POST':
-        seasons_watched = int(request.form.get('seasons_watched', 0))
-        personal_rating = float(request.form['personal_rating']) if request.form.get('personal_rating') else None
-        total_seasons = int(request.form['total_seasons'])
-
-        finished = seasons_watched >= total_seasons
-
-        data = {
-            "title": request.form['title'],
-            "release_year": int(request.form['release_year']),
-            "total_seasons": total_seasons,
-            "imdb_rating": float(request.form['imdb_rating']),
-            "imdb_link": request.form['imdb_link'],
-            "seasons_watched": seasons_watched,
-            "finished": finished,
-            "personal_rating": personal_rating
-        }
-
-        response = requests.patch(api_url, json=data)
-        if response.status_code == 200:
-            return redirect('/shows')
-        else:
-            return f"Error updating show: {response.text}", response.status_code
-
-    response = requests.get(api_url)
-    if response.status_code != 200:
-        return "Show not found", 404
-
-    show = response.json()
-    return render_template('edit_show.html', show=show)
-
-@app.route("/shows/<int:show_id>/delete", methods=["POST"])
-def delete_show_web(show_id):
-    api_url = f'http://127.0.0.1:5000/api/shows/{show_id}'
-    response = requests.delete(api_url)
-
-    if response.status_code == 200:
-        return redirect('/shows')
-    else:
-        return f"Error deleting show: {response.json().get('error', 'Unknown error')}", response.status_code
-
-@app.route('/shows/<int:show_id>/episodes')
-def episodes_view(show_id):
-    response = requests.get(f'http://127.0.0.1:5000/api/shows/{show_id}')
-    if response.status_code != 200:
-        return "Show not found", 404
-
-    show = response.json()
-    show_title = show['title']
-
-    response_episodes = requests.get(f'http://127.0.0.1:5000/api/shows/{show_id}/episodes')
-    if response_episodes.status_code == 200:
-        episodes = response_episodes.json()
-    else:
-        episodes = []
-
-    return render_template('episodes.html', episodes=episodes, show_title=show_title)
-
-if __name__ == '__main__':
-    app.run(debug=True)

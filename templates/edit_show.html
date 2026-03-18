@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Edit Show</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -23,6 +24,16 @@
 
     <label for="imdb_link">IMDb Link</label>
     <input id="imdb_link" name="imdb_link" type="text" value="{{ show.imdb_link }}" placeholder="https://www.imdb.com/title/..." required>
+
+    <label for="seasons_watched">Seasons Watched</label>
+    <input id="seasons_watched" name="seasons_watched" type="number" min="0" max="{{ show.total_seasons }}" value="{{ show.seasons_watched or 0 }}">
+
+    <label>
+        <input type="checkbox" name="finished" {% if show.finished %}checked{% endif %}> Finished
+    </label>
+
+    <label for="personal_rating">Personal Rating</label>
+    <input id="personal_rating" name="personal_rating" type="number" step="0.1" min="0" max="10" value="{{ show.personal_rating or '' }}">
 
     <button type="submit">Save</button>
 </form>
