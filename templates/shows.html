@@ -1,25 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>TV Shows Tracker</title>
+    <title>Shows</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>My TV Shows</h1>
-    <div class="container">
-        {% for show in shows %}
-        <div class="card">
-            <h2>{{ show.title }} <span>({{ show.release_year }})</span></h2>
-            <p>Seasons: {{ show.total_seasons }}</p>
-            <p>IMDb Rating: <strong>{{ show.imdb_rating }}</strong></p>
-            <div class="links">
-                <a href="{{ show.imdb_link }}" target="_blank">IMDb</a>
-                <a href="/shows/{{ show.id }}/seasons">Seasons</a>
-                <a href="/shows/{{ show.id }}/episodes">Episodes</a>
+
+<h1>My TV Shows</h1>
+
+<div class="list">
+    {% for show in shows %}
+    <div class="row">
+
+        <div class="left">
+            <h3>{{ show.title }}</h3>
+
+            <div class="meta">
+                <span>{{ show.release_year }}</span>
+                <span>⭐ {{ show.imdb_rating }}</span>
+                <span>{{ show.total_seasons }} seasons</span>
             </div>
         </div>
-        {% endfor %}
+
+        <div class="right">
+            <a href="{{ show.imdb_link }}" target="_blank">IMDb</a>
+        </div>
+
     </div>
+    {% endfor %}
+</div>
+
 </body>
 </html>

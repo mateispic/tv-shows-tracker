@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect
 import sqlite3
 
 app = Flask(__name__)
@@ -268,6 +268,8 @@ def delete_show(show_id):
     conn.close()
 
     return jsonify({"message": "Show deleted successfully"}), 200
+
+# ---------------- Web Client ----------------
 
 @app.route('/shows')
 def shows_view():
