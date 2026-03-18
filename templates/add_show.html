@@ -28,12 +28,23 @@
     <label for="seasons_watched">Seasons Watched</label>
     <input name="seasons_watched" type="number" placeholder="Seasons watched" value="0" min="0">
     
-    <label>
-        <input type="checkbox" name="finished"> Finished
+    <label class="finished-option">
+        <input type="checkbox" name="finished">
+        <span>Finished</span>
     </label>
 
     <label for="personal_rating">Personal Rating</label>
     <input name="personal_rating" type="number" step="0.1" placeholder="Personal rating" min="0" max="10">
+
+    <label>Genres</label>
+    <div class="genre-options">
+        {% for genre in genres %}
+        <label class="genre-option">
+            <input type="checkbox" name="genre_ids" value="{{ genre.id }}">
+            <span>{{ genre.name }}</span>
+        </label>
+        {% endfor %}
+    </div>
 
     <button type="submit">Add Show</button>
 </form>

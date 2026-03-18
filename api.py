@@ -30,6 +30,44 @@ def upsert_progress(conn, show_id, seasons_watched, finished, personal_rating):
         (show_id, seasons_watched, int(bool(finished)), personal_rating)
     )
 
+
+def parse_genre_ids(raw_genre_ids):
+    if raw_genre_ids is None:
+        return None
+    if not isinstance(raw_genre_ids, list):
+        raise ValueError("genre_ids must be a list")
+
+    parsed = []
+    for genre_id in raw_genre_ids:
+        parsed.append(int(genre_id))
+
+    # Remove duplicates while keeping order.
+    return list(dict.fromkeys(parsed))
+
+
+def validate_genre_ids(conn, genre_ids):
+    if not genre_ids:
+        return True
+
+    placeholders = ",".join("?" for _ in genre_ids)
+    rows = conn.execute(
+        f"SELECT id FROM genres WHERE id IN ({placeholders})",
+        genre_ids
+    ).fetchall()
+    return len(rows) == len(genre_ids)
+
+
+def set_show_genres(conn, show_id, genre_ids):
+    conn.execute("DELETE FROM show_genres WHERE show_id = ?", (show_id,))
+
+    if not genre_ids:
+        return
+
+    conn.executemany(
+        "INSERT INTO show_genres (show_id, genre_id) VALUES (?, ?)",
+        [(show_id, genre_id) for genre_id in genre_ids]
+    )
+
 # ---------------- GET: All shows ----------------
 @api_bp.route('/api/shows', methods=['GET'])
 def get_shows():
@@ -96,6 +134,18 @@ def get_show(show_id):
     
     # Preluam si progresul
     progress = conn.execute("SELECT * FROM progress WHERE show_id = ?", (show_id,)).fetchone()
+
+    genres = conn.execute(
+        """
+        SELECT g.id, g.name
+        FROM genres g
+        JOIN show_genres sg ON sg.genre_id = g.id
+        WHERE sg.show_id = ?
+        ORDER BY g.name
+        """,
+        (show_id,)
+    ).fetchall()
+
     conn.close()
     
     show_dict = dict(show)
@@ -112,6 +162,9 @@ def get_show(show_id):
             "personal_rating": None
         })
 
+    show_dict["genre_ids"] = [genre["id"] for genre in genres]
+    show_dict["genres"] = [genre["name"] for genre in genres]
+
     show_dict["_links"] = {
         "self": f"/shows/{show_id}",
         "seasons": f"/shows/{show_id}/seasons",
@@ -121,6 +174,15 @@ def get_show(show_id):
     }
 
     return jsonify(show_dict), 200
+
+
+# ---------------- GET: All genres ----------------
+@api_bp.route('/api/genres', methods=['GET'])
+def get_genres():
+    conn = get_db_connection()
+    genres = conn.execute("SELECT id, name FROM genres ORDER BY name").fetchall()
+    conn.close()
+    return jsonify([dict(genre) for genre in genres]), 200
 
 # ---------------- GET: All seasons for show by id ----------------
 @api_bp.route('/api/shows/<int:show_id>/seasons', methods=['GET'])
@@ -188,8 +250,17 @@ def create_show():
     finished = data.get('finished', False)
     personal_rating = data.get('personal_rating', None)
 
+    try:
+        genre_ids = parse_genre_ids(data.get('genre_ids', []))
+    except (TypeError, ValueError):
+        return jsonify({"error": "genre_ids must be a list of integers"}), 400
+
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    if not validate_genre_ids(conn, genre_ids):
+        conn.close()
+        return jsonify({"error": "One or more genres are invalid"}), 400
 
     cursor.execute(
         "INSERT INTO shows (title, release_year, total_seasons, imdb_rating, imdb_link) VALUES (?, ?, ?, ?, ?)",
@@ -201,6 +272,8 @@ def create_show():
         "INSERT INTO progress (show_id, seasons_watched, finished, personal_rating) VALUES (?, ?, ?, ?)",
         (show_id, seasons_watched, finished, personal_rating)
     )
+
+    set_show_genres(conn, show_id, genre_ids)
 
     conn.commit()
     conn.close()
@@ -295,6 +368,18 @@ def update_show(show_id):
     finished = data.get('finished', seasons_watched >= data['total_seasons'])
     personal_rating = data.get('personal_rating', None)
 
+    try:
+        genre_ids = parse_genre_ids(data.get('genre_ids'))
+    except (TypeError, ValueError):
+        conn.close()
+        return jsonify({"error": "genre_ids must be a list of integers"}), 400
+
+    if genre_ids is not None:
+        if not validate_genre_ids(conn, genre_ids):
+            conn.close()
+            return jsonify({"error": "One or more genres are invalid"}), 400
+        set_show_genres(conn, show_id, genre_ids)
+
     upsert_progress(conn, show_id, seasons_watched, finished, personal_rating)
 
     conn.commit()
@@ -319,7 +404,8 @@ def patch_show(show_id):
 
     allowed_show_fields = {'title', 'release_year', 'total_seasons', 'imdb_rating', 'imdb_link'}
     allowed_progress_fields = {'seasons_watched', 'finished', 'personal_rating'}
-    all_allowed = allowed_show_fields | allowed_progress_fields
+    extra_fields = {'genre_ids'}
+    all_allowed = allowed_show_fields | allowed_progress_fields | extra_fields
 
     invalid_fields = [key for key in data.keys() if key not in all_allowed]
     if invalid_fields:
@@ -359,6 +445,19 @@ def patch_show(show_id):
             new_finished = new_seasons_watched >= new_total_seasons
 
         upsert_progress(conn, show_id, new_seasons_watched, new_finished, new_personal_rating)
+
+    if 'genre_ids' in data:
+        try:
+            genre_ids = parse_genre_ids(data.get('genre_ids'))
+        except (TypeError, ValueError):
+            conn.close()
+            return jsonify({"error": "genre_ids must be a list of integers"}), 400
+
+        if not validate_genre_ids(conn, genre_ids):
+            conn.close()
+            return jsonify({"error": "One or more genres are invalid"}), 400
+
+        set_show_genres(conn, show_id, genre_ids)
 
     conn.commit()
     conn.close()

@@ -218,6 +218,46 @@ h1 {
     box-shadow: 0 0 8px rgba(66, 133, 244, 0.3);
 }
 
+.edit-form input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin-right: 6px;
+}
+
+.genre-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.genre-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border: 1px solid #d6e4f2;
+    border-radius: 10px;
+    background: #f5f9ff;
+    font-size: 0.9rem;
+}
+
+.finished-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    padding: 6px 10px;
+    border: 1px solid #cde8d4;
+    border-radius: 10px;
+    background: #edf9f1;
+    font-size: 0.9rem;
+    color: #2b5e3b;
+    font-weight: 500;
+}
+
 .edit-form button {
     padding: 12px;
     background: #4285f4;

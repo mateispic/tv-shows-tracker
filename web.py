@@ -3,6 +3,13 @@ import requests
 
 web_bp = Blueprint('web', __name__)
 
+
+def fetch_genres_for_form():
+    response = requests.get('http://127.0.0.1:5000/api/genres')
+    if response.status_code == 200:
+        return response.json()
+    return []
+
 @web_bp.route('/shows')
 def shows_view():
     search_query = request.args.get('q', '').strip()
@@ -20,6 +27,8 @@ def shows_view():
 
 @web_bp.route('/shows/add', methods=['GET', 'POST'])
 def add_show():
+    genres = fetch_genres_for_form()
+
     if request.method == 'POST':
         data = request.form
 
@@ -41,7 +50,8 @@ def add_show():
             "imdb_link": data['imdb_link'],
             "seasons_watched": seasons_watched,
             "finished": finished,
-            "personal_rating": personal_rating
+            "personal_rating": personal_rating,
+            "genre_ids": [int(genre_id) for genre_id in request.form.getlist('genre_ids')]
         }
 
         response = requests.post('http://127.0.0.1:5000/api/shows', json=payload)
@@ -51,11 +61,12 @@ def add_show():
         else:
             return f"Error creating show: {response.json().get('error', 'Unknown error')}", 400
 
-    return render_template('add_show.html')
+    return render_template('add_show.html', genres=genres)
 
 @web_bp.route('/shows/<int:show_id>/edit', methods=['GET', 'POST'])
 def edit_show(show_id):
     api_url = f'http://127.0.0.1:5000/api/shows/{show_id}'
+    genres = fetch_genres_for_form()
 
     if request.method == 'POST':
         seasons_watched = int(request.form.get('seasons_watched', 0))
@@ -72,7 +83,8 @@ def edit_show(show_id):
             "imdb_link": request.form['imdb_link'],
             "seasons_watched": seasons_watched,
             "finished": finished,
-            "personal_rating": personal_rating
+            "personal_rating": personal_rating,
+            "genre_ids": [int(genre_id) for genre_id in request.form.getlist('genre_ids')]
         }
 
         response = requests.patch(api_url, json=data)
@@ -86,7 +98,7 @@ def edit_show(show_id):
         return "Show not found", 404
 
     show = response.json()
-    return render_template('edit_show.html', show=show)
+    return render_template('edit_show.html', show=show, genres=genres)
 
 @web_bp.route("/shows/<int:show_id>/delete", methods=["POST"])
 def delete_show_web(show_id):
