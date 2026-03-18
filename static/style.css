@@ -102,3 +102,61 @@ h1 {
     margin-left: 10px;
     color: #dcdde1;
 }
+
+.search-form {
+    max-width: 500px;
+    margin: 0 auto 25px auto;
+    position: relative;
+}
+
+.search-form input {
+    width: 100%;
+    padding: 12px 50px 12px 20px;
+    border-radius: 30px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.search-form input:focus {
+    border-color: #4285f4;
+    box-shadow: 0 0 10px rgba(66, 133, 244, 0.3);
+}
+
+.search-form .search-btn {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #4285f4;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.search-form .search-btn:hover {
+    background: rgba(66, 133, 244, 0.1);
+    border-radius: 50%;
+}
+
+.search-form .material-symbols-outlined {
+    font-variation-settings:
+        'wght' 400,
+        'FILL' 0,
+        'GRAD' 0,
+        'opsz' 24;
+    font-size: 24px;
+}
+
+.no-results {
+    text-align: center;
+    color: #e84118;
+    margin-top: 10px;
+    font-weight: 500;
+}

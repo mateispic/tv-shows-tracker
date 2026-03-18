@@ -273,8 +273,20 @@ def delete_show(show_id):
 
 @app.route('/shows')
 def shows_view():
-    shows = fetch_shows()
-    return render_template('shows.html', shows=shows)
+    search_query = request.args.get('q', '').strip()
+    conn = get_db_connection()
+
+    if search_query:
+        shows = conn.execute(
+            "SELECT * FROM shows WHERE title LIKE ?",
+            ('%' + search_query + '%',)
+        ).fetchall()
+    else:
+        shows = conn.execute("SELECT * FROM shows").fetchall()
+
+    conn.close()
+    no_results = len(shows) == 0
+    return render_template('shows.html', shows=shows, search_query=search_query, no_results=no_results)
 
 if __name__ == '__main__':
     app.run(debug=True)
