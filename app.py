@@ -306,56 +306,57 @@ def add_show():
         if not all(field in data and data[field].strip() for field in required_fields):
             return "Missing required fields", 400
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO shows (title, release_year, total_seasons, imdb_rating, imdb_link) VALUES (?, ?, ?, ?, ?)",
-            (data['title'], data['release_year'], data['total_seasons'], data['imdb_rating'], data['imdb_link'])
-        )
-        conn.commit()
-        conn.close()
+        payload = {
+            "title": data['title'],
+            "release_year": int(data['release_year']),
+            "total_seasons": int(data['total_seasons']),
+            "imdb_rating": float(data['imdb_rating']),
+            "imdb_link": data['imdb_link']
+        }
 
-        return redirect('/shows')
+        response = requests.post('http://127.0.0.1:5000/api/shows', json=payload)
+
+        if response.status_code == 201:
+            return redirect('/shows')
+        else:
+            return f"Error creating show: {response.json().get('error', 'Unknown error')}", 400
 
     return render_template('add_show.html')
 
 @app.route('/shows/<int:show_id>/edit', methods=['GET', 'POST'])
 def edit_show(show_id):
-    conn = get_db_connection()
-    if request.method == 'POST':
-        data = request.form
-        conn.execute("""
-            UPDATE shows
-            SET title = ?, release_year = ?, total_seasons = ?, imdb_rating = ?, imdb_link = ?
-            WHERE id = ?
-        """, (
-            data['title'],
-            data['release_year'],
-            data['total_seasons'],
-            data['imdb_rating'],
-            data['imdb_link'],
-            show_id
-        ))
-        conn.commit()
-        conn.close()
-        return redirect('/shows')
+    api_url = f'http://127.0.0.1:5000/api/shows/{show_id}'
 
-    show = conn.execute("SELECT * FROM shows WHERE id = ?", (show_id,)).fetchone()
-    conn.close()
-    if show is None:
+    if request.method == 'POST':
+        data = {
+            "title": request.form['title'],
+            "release_year": int(request.form['release_year']),
+            "total_seasons": int(request.form['total_seasons']),
+            "imdb_rating": float(request.form['imdb_rating']),
+            "imdb_link": request.form['imdb_link']
+        }
+        response = requests.patch(api_url, json=data)
+        if response.status_code == 200:
+            return redirect('/shows')
+        else:
+            return f"Error updating show: {response.text}", response.status_code
+
+    response = requests.get(api_url)
+    if response.status_code != 200:
         return "Show not found", 404
 
+    show = response.json()
     return render_template('edit_show.html', show=show)
 
 @app.route("/shows/<int:show_id>/delete", methods=["POST"])
 def delete_show_web(show_id):
-    conn = get_db_connection()
-    show = conn.execute("SELECT * FROM shows WHERE id = ?", (show_id,)).fetchone()
-    if show:
-        conn.execute("DELETE FROM shows WHERE id = ?", (show_id,))
-        conn.commit()
-    conn.close()
-    return redirect('/shows')
+    api_url = f'http://127.0.0.1:5000/api/shows/{show_id}'
+    response = requests.delete(api_url)
+
+    if response.status_code == 200:
+        return redirect('/shows')
+    else:
+        return f"Error deleting show: {response.json().get('error', 'Unknown error')}", response.status_code
 
 if __name__ == '__main__':
     app.run(debug=True)
