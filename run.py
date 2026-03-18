@@ -3,9 +3,9 @@ from api import api_bp
 from web import web_bp
 
 app = Flask(__name__)
+app.json.sort_keys = False
 
 app.register_blueprint(api_bp)
-
 app.register_blueprint(web_bp)
 
 if __name__ == "__main__":
