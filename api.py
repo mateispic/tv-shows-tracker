@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, Flask, json
+from flask import Blueprint, request, jsonify
 import sqlite3
 
 api_bp = Blueprint('api', __name__)
@@ -16,6 +16,20 @@ def fetch_shows():
     shows = conn.execute("SELECT * FROM shows").fetchall()
     conn.close()
     return [dict(show) for show in shows]
+
+
+def upsert_progress(conn, show_id, seasons_watched, finished, personal_rating):
+    conn.execute(
+        """
+        INSERT INTO progress (show_id, seasons_watched, finished, personal_rating)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(show_id) DO UPDATE SET
+            seasons_watched = excluded.seasons_watched,
+            finished = excluded.finished,
+            personal_rating = excluded.personal_rating
+        """,
+        (show_id, seasons_watched, int(bool(finished)), personal_rating)
+    )
 
 
 # ---------------- GET: All shows ----------------
@@ -251,6 +265,13 @@ def update_show(show_id):
         (data['title'], data['release_year'], data['total_seasons'],
          data['imdb_rating'], data['imdb_link'], show_id)
     )
+
+    seasons_watched = data.get('seasons_watched', 0)
+    finished = data.get('finished', seasons_watched >= data['total_seasons'])
+    personal_rating = data.get('personal_rating', None)
+
+    upsert_progress(conn, show_id, seasons_watched, finished, personal_rating)
+
     conn.commit()
     conn.close()
 
@@ -271,18 +292,49 @@ def patch_show(show_id):
         conn.close()
         return jsonify({"error": "Show not found"}), 404
 
-    fields = []
-    values = []
+    allowed_show_fields = {'title', 'release_year', 'total_seasons', 'imdb_rating', 'imdb_link'}
+    allowed_progress_fields = {'seasons_watched', 'finished', 'personal_rating'}
+    all_allowed = allowed_show_fields | allowed_progress_fields
 
+    invalid_fields = [key for key in data.keys() if key not in all_allowed]
+    if invalid_fields:
+        conn.close()
+        return jsonify({"error": f"Invalid fields for update: {', '.join(invalid_fields)}"}), 400
+
+    show_fields = []
+    show_values = []
     for key in data:
-        fields.api_bpend(f"{key} = ?")
-        values.api_bpend(data[key])
+        if key in allowed_show_fields:
+            show_fields.append(f"{key} = ?")
+            show_values.append(data[key])
 
-    values.api_bpend(show_id)
+    if show_fields:
+        show_values.append(show_id)
+        query = f"UPDATE shows SET {', '.join(show_fields)} WHERE id = ?"
+        conn.execute(query, show_values)
 
-    query = f"UPDATE shows SET {', '.join(fields)} WHERE id = ?"
+    progress_needed = any(key in data for key in allowed_progress_fields) or 'total_seasons' in data
+    if progress_needed:
+        progress = conn.execute(
+            "SELECT seasons_watched, finished, personal_rating FROM progress WHERE show_id = ?",
+            (show_id,)
+        ).fetchone()
 
-    conn.execute(query, values)
+        current_seasons_watched = progress['seasons_watched'] if progress else 0
+        current_finished = bool(progress['finished']) if progress else False
+        current_personal_rating = progress['personal_rating'] if progress else None
+
+        new_total_seasons = data.get('total_seasons', show['total_seasons'])
+        new_seasons_watched = data.get('seasons_watched', current_seasons_watched)
+        new_personal_rating = data.get('personal_rating', current_personal_rating)
+
+        if 'finished' in data:
+            new_finished = data['finished']
+        else:
+            new_finished = new_seasons_watched >= new_total_seasons
+
+        upsert_progress(conn, show_id, new_seasons_watched, new_finished, new_personal_rating)
+
     conn.commit()
     conn.close()
     

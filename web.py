@@ -31,7 +31,7 @@ def add_show():
         personal_rating = float(data['personal_rating']) if data.get('personal_rating') else None
         total_seasons = int(data['total_seasons'])
 
-        finished = seasons_watched >= total_seasons
+        finished = ('finished' in data) or (seasons_watched >= total_seasons)
 
         payload = {
             "title": data['title'],
@@ -62,7 +62,7 @@ def edit_show(show_id):
         personal_rating = float(request.form['personal_rating']) if request.form.get('personal_rating') else None
         total_seasons = int(request.form['total_seasons'])
 
-        finished = seasons_watched >= total_seasons
+        finished = ('finished' in request.form) or (seasons_watched >= total_seasons)
 
         data = {
             "title": request.form['title'],
