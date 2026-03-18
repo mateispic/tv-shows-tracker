@@ -6,9 +6,10 @@
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Google Icon -->
+    <!-- Google Icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
-
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
+    
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -26,6 +27,12 @@
 {% if no_results %}
 <p class="no-results">No shows found for "{{ search_query }}"</p>
 {% endif %}
+
+<div class="top-actions">
+    <a href="/shows/add" class="add-btn">
+        <span class="material-symbols-outlined">add</span> Add TV Show
+    </a>
+</div>
 
 <div class="list">
     {% for show in shows %}

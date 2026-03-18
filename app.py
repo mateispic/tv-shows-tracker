@@ -288,5 +288,27 @@ def shows_view():
     no_results = len(shows) == 0
     return render_template('shows.html', shows=shows, search_query=search_query, no_results=no_results)
 
+@app.route('/shows/add', methods=['GET', 'POST'])
+def add_show():
+    if request.method == 'POST':
+        data = request.form
+
+        required_fields = ['title', 'release_year', 'total_seasons', 'imdb_rating', 'imdb_link']
+        if not all(field in data and data[field].strip() for field in required_fields):
+            return "Missing required fields", 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO shows (title, release_year, total_seasons, imdb_rating, imdb_link) VALUES (?, ?, ?, ?, ?)",
+            (data['title'], data['release_year'], data['total_seasons'], data['imdb_rating'], data['imdb_link'])
+        )
+        conn.commit()
+        conn.close()
+
+        return redirect('/shows')
+
+    return render_template('add_show.html')
+
 if __name__ == '__main__':
     app.run(debug=True)

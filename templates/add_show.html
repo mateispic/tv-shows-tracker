@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Show</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<h1>Add New Show</h1>
+
+<form method="POST" class="edit-form">
+    <input name="title" placeholder="Title" required>
+    <input name="release_year" type="number" placeholder="Release Year" required>
+    <input name="total_seasons" type="number" placeholder="Total Seasons" required>
+    <input name="imdb_rating" type="number" step="0.1" placeholder="IMDb Rating" required>
+    <input name="imdb_link" placeholder="IMDb Link" required>
+
+    <button type="submit">Add Show</button>
+</form>
+
+</body>
+</html>

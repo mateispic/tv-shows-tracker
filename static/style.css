@@ -160,3 +160,81 @@ h1 {
     margin-top: 10px;
     font-weight: 500;
 }
+
+.edit-form {
+    max-width: 450px;
+    margin: 40px auto;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    border-radius: 15px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.edit-form input {
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.edit-form input:focus {
+    border-color: #4285f4;
+    box-shadow: 0 0 8px rgba(66, 133, 244, 0.3);
+}
+
+.edit-form button {
+    padding: 12px;
+    background: #4285f4;
+    color: white;
+    border-radius: 8px;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.edit-form button:hover {
+    background: #2a6ad0;
+}
+
+.top-actions {
+    max-width: 900px;
+    margin: 0 auto 20px auto; /* centrat cu margine jos */
+    display: flex;
+    justify-content: flex-start; /* aliniat la stânga */
+}
+
+.add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: #4285f4;
+    color: white;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.add-btn:hover {
+    background: #2a6ad0;
+}
+
+.add-btn .material-symbols-outlined {
+    font-variation-settings:
+        'wght' 400,
+        'FILL' 0,
+        'GRAD' 0,
+        'opsz' 24;
+    font-size: 20px;
+}
