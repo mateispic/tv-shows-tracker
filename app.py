@@ -310,5 +310,33 @@ def add_show():
 
     return render_template('add_show.html')
 
+@app.route('/shows/<int:show_id>/edit', methods=['GET', 'POST'])
+def edit_show(show_id):
+    conn = get_db_connection()
+    if request.method == 'POST':
+        data = request.form
+        conn.execute("""
+            UPDATE shows
+            SET title = ?, release_year = ?, total_seasons = ?, imdb_rating = ?, imdb_link = ?
+            WHERE id = ?
+        """, (
+            data['title'],
+            data['release_year'],
+            data['total_seasons'],
+            data['imdb_rating'],
+            data['imdb_link'],
+            show_id
+        ))
+        conn.commit()
+        conn.close()
+        return redirect('/shows')
+
+    show = conn.execute("SELECT * FROM shows WHERE id = ?", (show_id,)).fetchone()
+    conn.close()
+    if show is None:
+        return "Show not found", 404
+
+    return render_template('edit_show.html', show=show)
+
 if __name__ == '__main__':
     app.run(debug=True)

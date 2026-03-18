@@ -1,60 +1,76 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Shows</title>
 
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Google Icons -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
-    
+    <!-- Google Icon -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
+
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
-<h1>My TV Shows</h1>
+    <h1>My TV Shows</h1>
 
-<form method="GET" action="/shows" class="search-form">
-    <input type="text" name="q" placeholder="Search shows..." value="{{ search_query }}">
-    <button type="submit" class="search-btn">
-        <span class="material-symbols-outlined">search</span>
-    </button>
-</form>
+    <form method="GET" action="/shows" class="search-form">
+        <input type="text" name="q" placeholder="Search shows..." value="{{ search_query }}">
+        <button type="submit" class="search-btn">
+            <span class="material-symbols-outlined">search</span>
+        </button>
+    </form>
 
-{% if no_results %}
-<p class="no-results">No shows found for "{{ search_query }}"</p>
-{% endif %}
+    {% if no_results %}
+    <p class="no-results">No shows found for "{{ search_query }}"</p>
+    {% endif %}
 
-<div class="top-actions">
-    <a href="/shows/add" class="add-btn">
-        <span class="material-symbols-outlined">add</span> Add TV Show
-    </a>
-</div>
-
-<div class="list">
-    {% for show in shows %}
-    <div class="row">
-
-        <div class="left">
-            <h3>{{ show.title }}</h3>
-
-            <div class="meta">
-                <span>{{ show.release_year }}</span>
-                <span>⭐ {{ show.imdb_rating }}</span>
-                <span>{{ show.total_seasons }} seasons</span>
-            </div>
-        </div>
-
-        <div class="right">
-            <a href="{{ show.imdb_link }}" target="_blank">IMDb</a>
-        </div>
-
+    <div class="top-actions">
+        <a href="/shows/add" class="add-btn">
+            <span class="material-symbols-outlined">add</span> Add TV Show
+        </a>
     </div>
-    {% endfor %}
-</div>
+
+    <div class="list">
+        {% for show in shows %}
+        <div class="row">
+
+            <div class="left">
+                <h3>{{ show.title }}</h3>
+
+                <div class="meta">
+                    <span>{{ show.release_year }}</span>
+                    <span>⭐ {{ show.imdb_rating }}</span>
+                    <span>{{ show.total_seasons }} seasons</span>
+                    <a href="{{ show.imdb_link }}" target="_blank" class="imdb-link">IMDb</a>
+                </div>
+            </div>
+
+            <div class="actions">
+                <!-- Edit -->
+                <form action="/shows/{{ show.id }}/edit" method="GET">
+                    <button type="submit" class="edit-icon-btn">
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                </form>
+
+                <!-- Delete -->
+                <form action="/shows/{{ show.id }}/delete" method="POST">
+                    <button type="submit" class="delete-icon-btn">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
 
 </body>
+
 </html>

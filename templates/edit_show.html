@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Show</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<h1>Edit Show</h1>
+
+<form method="POST" class="edit-form">
+    <label for="title">Title</label>
+    <input id="title" name="title" value="{{ show.title }}" placeholder="Title" required>
+
+    <label for="release_year">Release Year</label>
+    <input id="release_year" name="release_year" type="number" value="{{ show.release_year }}" required>
+
+    <label for="total_seasons">Total Seasons</label>
+    <input id="total_seasons" name="total_seasons" type="number" value="{{ show.total_seasons }}" required>
+
+    <label for="imdb_rating">IMDb Rating</label>
+    <input id="imdb_rating" name="imdb_rating" type="number" step="0.1" value="{{ show.imdb_rating }}" required>
+
+    <label for="imdb_link">IMDb Link</label>
+    <input id="imdb_link" name="imdb_link" type="text" value="{{ show.imdb_link }}" placeholder="https://www.imdb.com/title/..." required>
+
+    <button type="submit">Save</button>
+</form>
+
+</body>
+</html>
