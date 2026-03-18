@@ -20,6 +20,21 @@ The data is stored in a SQLite database.
 - SQLite
 - HTML/CSS (Jinja templates)
 
+## Architecture
+
+The project has a simple 3-layer architecture:
+
+- Presentation layer: HTML pages from templates (shows list, add form, edit form).
+- Application layer: Flask routes from app.py (web routes + REST API routes).
+- Data layer: SQLite database (tvshows.db) with relational tables.
+
+Request flow:
+
+1. User sends request from browser or Postman.
+2. Flask route handles the request and validates input.
+3. SQL query is executed on SQLite.
+4. Response is returned as HTML page (web) or JSON (API).
+
 ## Project structure
 
 ```
@@ -35,6 +50,56 @@ tv-shows-tracker/
     |-- add_show.html
     `-- edit_show.html
 ```
+
+## Database structure
+
+The database is initialized from database.py and contains these tables:
+
+1. shows
+- id (PK)
+- title
+- release_year
+- total_seasons
+- imdb_rating
+- imdb_link
+
+2. genres
+- id (PK)
+- name (unique)
+
+3. show_genres
+- show_id (FK -> shows.id)
+- genre_id (FK -> genres.id)
+- composite primary key (show_id, genre_id)
+
+4. seasons
+- id (PK)
+- show_id (FK -> shows.id)
+- season_number
+- release_year
+- unique(show_id, season_number)
+
+5. episodes
+- id (PK)
+- season_id (FK -> seasons.id)
+- title
+- episode_number
+- air_date
+- imdb_rating
+- unique(season_id, episode_number)
+
+6. progress
+- id (PK)
+- show_id (FK -> shows.id, unique)
+- seasons_watched
+- finished
+- personal_rating
+
+Important relation summary:
+
+- One show has many seasons.
+- One season has many episodes.
+- Shows and genres have many-to-many relation through show_genres.
 
 ## How to run
 
@@ -78,7 +143,7 @@ http://127.0.0.1:5000/shows
 - `POST /shows/<id>/edit` - save edited show
 - `POST /shows/<id>/delete` - delete a show
 
-## Main API routes
+## API endpoints
 
 - `GET /api/shows`
 - `GET /api/shows/<id>`
@@ -90,6 +155,29 @@ http://127.0.0.1:5000/shows
 - `POST /api/shows/<id>/seasons`
 - `GET /api/shows/<id>/episodes`
 - `POST /api/seasons/<season_id>/episodes`
+
+Common status codes used:
+
+- 200: request successful
+- 201: resource created
+- 400: bad request / missing fields / duplicate data
+- 404: resource not found
+
+## Postman testing
+
+I tested the API endpoints in Postman using GET, POST, PUT, PATCH, and DELETE requests.
+
+Tested examples:
+
+- GET all shows
+- GET show by id
+- POST create show
+- PUT full update show
+- PATCH partial update show
+- DELETE show
+- GET/POST seasons for show
+- GET episodes for show
+- POST episode for season
 
 ## Notes
 
